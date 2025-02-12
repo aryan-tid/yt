@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Screen Video</title>
+    <style>
+        /* Remove default margins and padding */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Ensure the iframe takes the full width and height of the screen */
+        iframe {
+            width: 100%;
+            height: 80%;
+            border: none;
+        }
+
+        /* Styling for comments section */
+        .comments-section {
+            width: 100%;
+            height: 20%;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+
+        .comment {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .comment .author {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .comment .text {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .comment .timestamp {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* Styling for replies */
+        .reply {
+            margin-left: 20px;
+            border-left: 2px solid #ddd;
+            padding-left: 10px;
+        }
+
+        /* Button to toggle showing more replies */
+        .toggle-replies {
+            font-size: 12px;
+            color: #0066cc;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Get the video ID from the URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoID = urlParams.get('ID');
+        const apiKey = 'YOUR_API_KEY';  // Replace with your actual API key
+
+        if (videoID) {
+            // Create the iframe dynamically and insert it into the body
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed/${videoID}`;
+            iframe.title = "YouTube video player";
+            iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+            iframe.referrerpolicy = "strict-origin-when-cross-origin";
+            iframe.allowfullscreen = true;
+            document.body.appendChild(iframe);
+
+            // Fetch comments using YouTube API
+            fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoID}&key=${apiKey}&maxResults=5&textFormat=html`)
+                .then(response => response.json())
+                .then(data => {
+                    const commentsSection = document.createElement('div');
+                    commentsSection.classList.add('comments-section');
+
+                    data.items.forEach(item => {
+                        const comment = item.snippet.topLevelComment.snippet;
+                        const author = comment.authorDisplayName;
+                        const text = comment.textDisplay;
+                        const timestamp = new Date(comment.publishedAt).toLocaleString();
+
+                        const commentDiv = document.createElement('div');
+                        commentDiv.classList.add('comment');
+                        
+                        // Main comment content
+                        commentDiv.innerHTML = `
+                            <div class="author">${author}</div>
+                            <div class="text">${text}</div>
+                            <div class="timestamp">${timestamp}</div>
+                        `;
+
+                        // Check for replies
+                        if (item.replies && item.replies.commentThread) {
+                            const repliesDiv = document.createElement('div');
+                            repliesDiv.classList.add('replies');
+
+                            item.replies.commentThread.forEach(reply => {
+                                const replyComment = reply.snippet.topLevelComment.snippet;
+                                const replyAuthor = replyComment.authorDisplayName;
+                                const replyText = replyComment.textDisplay;
+                                const replyTimestamp = new Date(replyComment.publishedAt).toLocaleString();
+
+                                const replyDiv = document.createElement('div');
+                                replyDiv.classList.add('reply');
+                                replyDiv.innerHTML = `
+                                    <div class="author">${replyAuthor}</div>
+                                    <div class="text">${replyText}</div>
+                                    <div class="timestamp">${replyTimestamp}</div>
+                                `;
+
+                                repliesDiv.appendChild(replyDiv);
+                            });
+
+                            commentDiv.appendChild(repliesDiv);
+                        }
+
+                        // Add "Show more replies" button if there are more than 3 replies
+                        if (item.replies && item.replies.commentThread.length > 3) {
+                            const toggleButton = document.createElement('button');
+                            toggleButton.classList.add('toggle-replies');
+                            toggleButton.innerText = 'Show more replies';
+                            toggleButton.onclick = () => {
+                                const allReplies = commentDiv.querySelectorAll('.reply');
+                                allReplies.forEach(reply => reply.style.display = 'block');
+                                toggleButton.style.display = 'none';
+                            };
+                            commentDiv.appendChild(toggleButton);
+                        }
+
+                        commentsSection.appendChild(commentDiv);
+                    });
+
+                    document.body.appendChild(commentsSection);
+                })
+                .catch(error => {
+                    console.error('Error fetching comments:', error);
+                    document.body.innerHTML = '<p>Error loading comments.</p>';
+                });
+        } else {
+            document.body.innerHTML = '<p>No video ID provided in the URL parameter.</p>';
+        }
+    </script>
+</body>
+</html>

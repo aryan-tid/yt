@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Screen Video</title>
+    <style>
+        /* Remove default margins and padding */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        /* Ensure the iframe takes the full width and height of the screen */
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Get the video ID from the URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoID = urlParams.get('ID');
+
+        if (videoID) {
+            // Create the iframe dynamically and insert it into the body
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed/${videoID}`;
+            iframe.title = "YouTube video player";
+            iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+            iframe.referrerpolicy = "strict-origin-when-cross-origin";
+            iframe.allowfullscreen = true;
+            document.body.appendChild(iframe);
+        } else {
+            document.body.innerHTML = '<p>No video ID provided in the URL parameter.</p>';
+        }
+    </script>
+</body>
+</html>
